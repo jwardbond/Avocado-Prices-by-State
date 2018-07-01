@@ -1,0 +1,1 @@
+The goal is to make a gif of avocado prices by state over the last 5 years.
