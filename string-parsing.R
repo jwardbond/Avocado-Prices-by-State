@@ -10,15 +10,19 @@ addSpace.uppercase <- function(toSplit, acronyms=FALSE) {
   }
 }
 
-#Will separate strings by spaces, but ignore common prefixes on cities
+#Will separate strings by spaces, but ignore common prefixes and Suffixes on cities
 strsplit.citiesBySpace <- function(toSplit, ignore_case=TRUE) {
-  commonPrefix <- c("San", "Las", "Los", "New", "Ft", "Fort", "St", "Saint", "Grand", "Great", "Greater",
+  commonPrefix <- c("Las", "Los", "New", "Ft", "Fort", "St", "Saint", "San", "Santa", "El", "Salt", 
+                    "Long", "Mount", "Palo", "Palm", "Grand", "Great", "Greater",
                     "North", "South", "East", "West")
+  
+  commonSuffix <- c( "Beach", "City", "Falls", "Harbour", "Heights", "Hill", "Hills", "Land", "Valley")
 
-  #Prepare the common prefixes for regex
-  expression <- commonPrefix %>% 
-    paste0("(?<!\\w)", ., collapse="|") %>%
-    paste0("(?<!", ., ")\\s")
+  #Prepare the common pre/suffixes for regex /(?<!...(?<!\w)commonPrefixes)...\s/
+  commonPrefix <- paste0("(?<!\\w)", commonPrefix, collapse="|")
+  commonSuffix <- paste0(commonSuffix, "(?!\\w)", collapse="|")
+   
+  expression <- paste0("(?<!", commonPrefix, ")\\s")
   
   #Add ignore case modifier
   if (ignore_case==TRUE) {
