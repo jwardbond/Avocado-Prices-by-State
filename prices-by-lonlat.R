@@ -1,5 +1,4 @@
 library(ggplot2)
-library(ggmap)
 library(maps)
 library(dplyr)
 library(stringr)
@@ -8,17 +7,13 @@ source("string-parsing.R")
 
 
 #*************************************************************************************
-#I want to explore the relationship between avocado prices and latitude. The first 
-#step is to read in the avocado data set and format it the way we want. I am summarizing
-#the data early to hopefully make the next steps faster
+#I want to explore the relationship between avocado prices and location in the US. The 
+#first step is to read in the avocado data set and format it the way we want. I am 
+#summarizing the data early to hopefully make the next steps faster.
 #*************************************************************************************
 
 #read in the dataset as characters, no factors
-avocado.df <- read.csv('avocado-raw.csv', stringsAsFactors = FALSE)
-
-#insert spaces between region names based on uppercase to make it more readable
-avocado.df$region <- sapply(avocado.df$region, addSpace.uppercase)
-write.csv(avocado.df, file="avocado.csv")
+avocado.df <- read.csv('avocado.csv', stringsAsFactors = FALSE)
 
 #compute average price by region name
 avocado.df <- avocado.df %>%
@@ -58,7 +53,7 @@ avocado.df$region <- sapply(avocado.df$region, firstCity)
 #************************************************************************************
 
 #get list of US cities
-cities.df <- select(us.cities,name, country.etc, pop, lat)
+cities.df <- select(us.cities,name, country.etc, pop, long, lat)
 
 #remove state names from end of city names
 pattern <- "\\s[A-Z]{1,2}$"
@@ -71,7 +66,7 @@ cities.df <- cities.df[order(cities.df$name, -cities.df$pop),] %>%
 
 
 #************************************************************************************
-#Need to connect regions(cities) in the avocado dataset with their appropriate latitudes
+#Need to connect regions(cities) in the avocado dataset with their appropriate coord
 #One option is the google geocode API, however the ambiguity of some city names will 
 #cause problems. An inner join with the prepared df of us cities will remove any 
 #regions that aren't cities and will associate any ambiguous city names with the most
@@ -79,17 +74,26 @@ cities.df <- cities.df[order(cities.df$name, -cities.df$pop),] %>%
 #************************************************************************************
 
 #clean up colnames
-colnames(cities.df) <- c("city", "state", "pop", "lat")
+colnames(cities.df) <- c("city", "state", "pop", "long", "lat")
 colnames(avocado.df) <- c("city", "avg.price")
 
 #join tables
 avocado.df <- inner_join(avocado.df, cities.df, by="city")
 
-ggplot(avocado.df, aes(x=lat, y=avg.price)) +
-  geom_point(color="#6a403a", size=3) +
-  ggtitle("Avocado Prices in the United States by Latitude") +
-  xlab("Latitude (°)") +
-  ylab("Average Avocado Price (USD)") +
+#average by state
+avocado.df <- avocado.df %>%
+  group_by(state) %>%
+  summarise(mean.price = mean(AveragePrice))
+
+
+
+USmap <- map_data("state")
+
+ggplot(avocado.df, aes(x=long, y=lat)) +
+  geom_point(color="#6a403a", aes(size=avg.price)) +
+  ggtitle("Avocado Prices in Mainland USA by Location") +
+  xlab("Longitude (°)") +
+  ylab("Latitude (°)") +
   theme(
     axis.line = element_line(color="#000000"),
     axis.text = element_text(face="bold"),
